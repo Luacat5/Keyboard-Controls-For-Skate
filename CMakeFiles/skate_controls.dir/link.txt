@@ -1,0 +1,3 @@
+"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\skate_controls.dir/objects.a
+C:\msys64\ucrt64\bin\ar.exe qc CMakeFiles\skate_controls.dir/objects.a @CMakeFiles\skate_controls.dir\objects1.rsp
+C:\msys64\ucrt64\bin\c++.exe -Wl,--whole-archive CMakeFiles\skate_controls.dir/objects.a -Wl,--no-whole-archive -o skate_controls.exe -Wl,--out-implib,libskate_controls.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\skate_controls.dir\linkLibs.rsp

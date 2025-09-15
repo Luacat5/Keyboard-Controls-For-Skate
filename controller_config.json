@@ -1,0 +1,41 @@
+{
+  "buttons": {
+    "Square": "Z",
+    "X": "X",
+    "Circle": "C",
+    "Triangle": "V",
+    "L1": "Q",
+    "R1": "E",
+    "L2": "VK_INSERT",
+    "R2": "VK_PRIOR",
+    "L3": "F",
+    "R3": "G",
+    "PAUSE": "VK_RETURN",
+    "SELECT": "VK_BACK"
+  },
+  "dpad": {
+    "up": "VK_UP",
+    "down": "VK_DOWN",
+    "left": "VK_LEFT",
+    "right" : "VK_RIGHT"
+  },
+  "left_stick": {
+    "up": "W",
+    "down": "S",
+    "left": "A",
+    "right": "D",
+    "acceleration": 1.0
+  },
+  "right_stick": {
+    "up": "VK_HOME",
+    "down": "VK_END",
+    "left": "VK_DELETE",
+    "right": "VK_NEXT",
+    "acceleration": 0.6
+  },
+  "special_keys": {
+    "right_stick_multiplier_key": "VK_LSHIFT",
+    "right_stick_multiplier_value": 0.8
+  },
+  "poll_interval_ms": 5
+}
