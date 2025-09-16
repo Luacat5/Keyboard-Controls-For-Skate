@@ -11,6 +11,7 @@ add_executable( skate_controls
     src/config.cpp
     src/logic.cpp 
     src/mapping.cpp
+    src/hooks.cpp
     )
 
 # Link against ViGEmClient and required Windows system libs

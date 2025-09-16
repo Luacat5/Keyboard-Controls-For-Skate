@@ -34,8 +34,10 @@
     "acceleration": 0.6
   },
   "special_keys": {
+    "EXIT": "VK_ESCAPE",
     "right_stick_multiplier_key": "VK_LSHIFT",
     "right_stick_multiplier_value": 0.8
   },
-  "poll_interval_ms": 5
+  "input_sink": true,
+  "poll_interval_ms": 1
 }

@@ -1,17 +1,4 @@
 #include "logic.h"
-#include "mapping.h"
-#include "config.h"
-
-#include <iostream>
-#include <Xinput.h>
-#include <VigEm/Client.h>
-#include <unordered_map>
-#include <windows.h>
-#include <fstream>
-
-// #pragma comment (lib, "setupapi.lib")
-
-
 
 static PVIGEM_CLIENT client = nullptr;
 static PVIGEM_TARGET pad = nullptr;
@@ -54,8 +41,8 @@ bool initController()
     return true;
 }
 
-const int maxThumbRadius = 32767;
-
+const int maxThumbRadius = 32766;
+const int stickDeadZone = 60;
 
 int RStickVelocity[2] = {0,0};
 int LStickVelocity[2] = {0,0};
@@ -71,10 +58,10 @@ int AbsClamp(int x, int c){
 
 void ReturnToZeros(int Vect[2], float speed){
     for (int i = 0; i < 2; i++){
-        if (Vect[i] > 200 || Vect[0] < 200){
-            Vect[i] *= speed;
-        } else {
+        if (Vect[i] < stickDeadZone && Vect[i] > -stickDeadZone){
             Vect[i] = 0;
+        } else {
+            Vect[i] *= speed;           
         }
     }
 }
@@ -89,16 +76,15 @@ void mainLogicLoop()
         return;
     }
 
-    std::cout << "Running main logic loop...\n";
 
     loadConfig("controller_config.json");
-    std::unordered_map<std::string, int> keyMap = MakeKeyMap();
+    MakeKeyMap();
+
+
+    std::cout << "Running main logic loop...\n";
 
     while (true)
     {
-        // DEBUG
-        // std::cout << "LStick:" << LStickVelocity[0] << ", " << LStickVelocity[1] << std::endl;
-        // std::cout << "RStick:" << RStickVelocity[0] << ", " << RStickVelocity[1] << std::endl;
     
         XUSB_REPORT report;
         ZeroMemory(&report, sizeof(XUSB_REPORT));
@@ -106,64 +92,47 @@ void mainLogicLoop()
         const float leftAccel = config["left_stick"]["acceleration"].get<float>();
         const float rightAccel = config["right_stick"]["acceleration"].get<float>();
 
-        bool lMovement = false;
-
         ReturnToZeros(RStickVelocity, 0.7);
         ReturnToZeros(LStickVelocity, 0.7);
-
-        // left stick:
-        if (GetAsyncKeyState(keyMap["left_stick_up"]) & 0x8000) {
-            LStickVelocity[1] += maxThumbRadius * leftAccel; // max up
-            lMovement = true;
+        // left stick
+        if (GetKeyDown("left_stick_up")) {
+            LStickVelocity[1] += maxThumbRadius * leftAccel;
         }
-        if (GetAsyncKeyState(keyMap["left_stick_down"]) & 0x8000) {
-            LStickVelocity[1] -= maxThumbRadius * leftAccel; // max down
-            lMovement = true;
+        if (GetKeyDown("left_stick_down")) {
+            LStickVelocity[1] -= maxThumbRadius * leftAccel;
         }
-        if (GetAsyncKeyState(keyMap["left_stick_left"]) & 0x8000) {
+        if (GetKeyDown("left_stick_left")) {
             LStickVelocity[0] -= maxThumbRadius * leftAccel;
-            lMovement = true;
         }
-        if (GetAsyncKeyState(keyMap["left_stick_right"]) & 0x8000) {
+        if (GetKeyDown("left_stick_right")) {
             LStickVelocity[0] += maxThumbRadius * leftAccel;
-            lMovement = true;
         }
-        
-       
-        
+
         LStickVelocity[0] = AbsClamp(LStickVelocity[0], maxThumbRadius);
         LStickVelocity[1] = AbsClamp(LStickVelocity[1], maxThumbRadius);
-
 
         report.sThumbLX = LStickVelocity[0];
         report.sThumbLY = LStickVelocity[1];
 
-        float scaling = 1.0;
-        if (GetAsyncKeyState(keyMap["right_stick_multiplier"]) & 0x8000) {
+        float scaling = 1.0f;
+        if (GetKeyDown("right_stick_multiplier")) {
             scaling = config["special_keys"]["right_stick_multiplier_value"].get<float>();
         }
 
-        bool rMovement = false;
-
-        // right stick:
-        if (GetAsyncKeyState(keyMap["right_stick_up"]) & 0x8000) {
+        // right stick
+        if (GetKeyDown("right_stick_up")) {
             RStickVelocity[1] += maxThumbRadius * rightAccel * scaling;
-            rMovement = true; 
         }
-        if (GetAsyncKeyState(keyMap["right_stick_down"]) & 0x8000) {
-            RStickVelocity[1] -= maxThumbRadius * rightAccel * scaling; 
-            rMovement = true; 
+        if (GetKeyDown("right_stick_down")) {
+            RStickVelocity[1] -= maxThumbRadius * rightAccel * scaling;
         }
-        if (GetAsyncKeyState(keyMap["right_stick_left"]) & 0x8000) {
+        if (GetKeyDown("right_stick_left")) {
             RStickVelocity[0] -= maxThumbRadius * rightAccel * scaling;
-            rMovement = true;
         }
-        if (GetAsyncKeyState(keyMap["right_stick_right"]) & 0x8000) {
+        if (GetKeyDown("right_stick_right")) {
             RStickVelocity[0] += maxThumbRadius * rightAccel * scaling;
-            rMovement = true;
         }
 
-       
         RStickVelocity[0] = AbsClamp(RStickVelocity[0], maxThumbRadius * scaling);
         RStickVelocity[1] = AbsClamp(RStickVelocity[1], maxThumbRadius * scaling);
 
@@ -171,65 +140,35 @@ void mainLogicLoop()
         report.sThumbRY = RStickVelocity[1];
 
         // face buttons
-        if (GetAsyncKeyState(keyMap["Square"]) & 0x8000) {
-            report.wButtons |= XUSB_GAMEPAD_X; // Square
-        }
-        if (GetAsyncKeyState(keyMap["X"]) & 0x8000) {
-            report.wButtons |= XUSB_GAMEPAD_A; // X
-        }
-        if (GetAsyncKeyState(keyMap["Circle"]) & 0x8000) {
-            report.wButtons |= XUSB_GAMEPAD_B; // Circle
-        }
-        if (GetAsyncKeyState(keyMap["Triangle"]) & 0x8000) {
-            report.wButtons |= XUSB_GAMEPAD_Y; // Triangle
-        }
+        if (GetKeyDown("Square"))   report.wButtons |= XUSB_GAMEPAD_X;
+        if (GetKeyDown("X"))        report.wButtons |= XUSB_GAMEPAD_A;
+        if (GetKeyDown("Circle"))   report.wButtons |= XUSB_GAMEPAD_B;
+        if (GetKeyDown("Triangle")) report.wButtons |= XUSB_GAMEPAD_Y;
 
-        //dpad
-        if (GetAsyncKeyState(keyMap["dpad_up"]) & 0x8000) {
-            report.wButtons |= XUSB_GAMEPAD_DPAD_UP; 
-        }
-        if (GetAsyncKeyState(keyMap["dpad_right"]) & 0x8000) {
-            report.wButtons |= XUSB_GAMEPAD_DPAD_RIGHT; 
-        }
-        if (GetAsyncKeyState(keyMap["dpad_left"]) & 0x8000) {
-            report.wButtons |= XUSB_GAMEPAD_DPAD_LEFT; 
-        }
-        if (GetAsyncKeyState(keyMap["dpad_down"]) & 0x8000) {
-            report.wButtons |= XUSB_GAMEPAD_DPAD_DOWN; 
-        }
-        
-        
-        //triggers:
+        // dpad
+        if (GetKeyDown("dpad_up"))    report.wButtons |= XUSB_GAMEPAD_DPAD_UP;
+        if (GetKeyDown("dpad_right")) report.wButtons |= XUSB_GAMEPAD_DPAD_RIGHT;
+        if (GetKeyDown("dpad_left"))  report.wButtons |= XUSB_GAMEPAD_DPAD_LEFT;
+        if (GetKeyDown("dpad_down"))  report.wButtons |= XUSB_GAMEPAD_DPAD_DOWN;
 
-        if (GetAsyncKeyState(keyMap["L2"]) & 0x8000) {
-            report.bLeftTrigger = 255; 
-        }
-        if (GetAsyncKeyState(keyMap["R2"]) & 0x8000) {
-            report.bRightTrigger = 255; 
-        }
+        // triggers
+        if (GetKeyDown("L2")) report.bLeftTrigger  = 255;
+        if (GetKeyDown("R2")) report.bRightTrigger = 255;
 
+        // shoulders / sticks
+        if (GetKeyDown("L1")) report.wButtons |= XUSB_GAMEPAD_LEFT_SHOULDER;
+        if (GetKeyDown("R1")) report.wButtons |= XUSB_GAMEPAD_RIGHT_SHOULDER;
+        if (GetKeyDown("L3")) report.wButtons |= XUSB_GAMEPAD_LEFT_THUMB;
+        if (GetKeyDown("R3")) report.wButtons |= XUSB_GAMEPAD_RIGHT_THUMB;
 
-    
-        if (GetAsyncKeyState(keyMap["L1"]) & 0x8000) {
-            report.wButtons |= XUSB_GAMEPAD_LEFT_SHOULDER; 
-        }
-        if (GetAsyncKeyState(keyMap["R1"]) & 0x8000) {
-            report.wButtons |= XUSB_GAMEPAD_RIGHT_SHOULDER; 
-        }
+        // start/back
+        if (GetKeyDown("PAUSE"))  report.wButtons |= XUSB_GAMEPAD_START;
+        if (GetKeyDown("SELECT")) report.wButtons |= XUSB_GAMEPAD_BACK;
 
-        if (GetAsyncKeyState(keyMap["L3"]) & 0x8000) {
-            report.wButtons |= XUSB_GAMEPAD_LEFT_THUMB; 
-        }
-        if (GetAsyncKeyState(keyMap["R3"]) & 0x8000) {
-            report.wButtons |= XUSB_GAMEPAD_RIGHT_THUMB; 
-        }
-
-
-        if (GetAsyncKeyState(keyMap["PAUSE"]) & 0x8000) {
-            report.wButtons |= XUSB_GAMEPAD_START; 
-        }
-        if (GetAsyncKeyState(keyMap["SELECT"]) & 0x8000) {
-            report.wButtons |= XUSB_GAMEPAD_BACK; 
+        // exit key
+        if (GetKeyDown("EXIT")) {
+            std::cout << "Exit key pressed, shutting down...\n";
+            break;
         }
 
         vigem_target_x360_update(client, pad, report);

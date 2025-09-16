@@ -210,6 +210,30 @@ src/config.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\skate_controls.dir\build.make CMakeFiles/skate_controls.dir/src/config.cpp.s
 .PHONY : src/config.cpp.s
 
+src/hooks.obj: src/hooks.cpp.obj
+.PHONY : src/hooks.obj
+
+# target to build an object file
+src/hooks.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\skate_controls.dir\build.make CMakeFiles/skate_controls.dir/src/hooks.cpp.obj
+.PHONY : src/hooks.cpp.obj
+
+src/hooks.i: src/hooks.cpp.i
+.PHONY : src/hooks.i
+
+# target to preprocess a source file
+src/hooks.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\skate_controls.dir\build.make CMakeFiles/skate_controls.dir/src/hooks.cpp.i
+.PHONY : src/hooks.cpp.i
+
+src/hooks.s: src/hooks.cpp.s
+.PHONY : src/hooks.s
+
+# target to generate assembly for a file
+src/hooks.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\skate_controls.dir\build.make CMakeFiles/skate_controls.dir/src/hooks.cpp.s
+.PHONY : src/hooks.cpp.s
+
 src/logic.obj: src/logic.cpp.obj
 .PHONY : src/logic.obj
 
@@ -299,6 +323,9 @@ help:
 	@echo ... src/config.obj
 	@echo ... src/config.i
 	@echo ... src/config.s
+	@echo ... src/hooks.obj
+	@echo ... src/hooks.i
+	@echo ... src/hooks.s
 	@echo ... src/logic.obj
 	@echo ... src/logic.i
 	@echo ... src/logic.s

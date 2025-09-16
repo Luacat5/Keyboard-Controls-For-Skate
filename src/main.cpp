@@ -12,6 +12,7 @@
 #include <Xinput.h>
 
 #include "logic.h" //my custom controller logicz
+#include "hooks.h"
 
 bool vigemDriverPresent()
 {
@@ -117,7 +118,11 @@ int main()
         std::cerr << "Failed to init initial controller\n";
         return 1;
     }
+
+
+    startKeyboardHook();
     mainLogicLoop();
+    stopKeyboardHook();
 
     return 0;
 }

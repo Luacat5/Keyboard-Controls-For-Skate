@@ -65,31 +65,72 @@ const std::string allButtons[] = {
     "PAUSE", "SELECT"
 };
 
-void bindStick(const std::string& stickName, std::unordered_map<std::string, int>& map) {
+void bindStick(const std::string& stickName, std::unordered_map<int, std::string>& map) {
     const auto& StickInfo = config[stickName];
 
     for (int i = 0; i < 4; i++) {
         const std::string& DirectionName = stickNames[i];
-        map.insert_or_assign(stickName + "_" + DirectionName,
-            GetRepresentative(StickInfo[DirectionName].get<std::string>()));
+        map.insert_or_assign(
+            GetRepresentative(StickInfo[DirectionName].get<std::string>()), stickName + "_" + DirectionName);
     }
 }
 
 
-std::unordered_map<std::string, int> MakeKeyMap() {
-    std::unordered_map<std::string, int> NewMapping;
+static std::unordered_map<int, std::string> KeyToAction;
+static std::unordered_map<std::string, bool> IsKeyDown;
 
-    bindStick("left_stick", NewMapping);
-    bindStick("right_stick", NewMapping);
-    bindStick("dpad", NewMapping);
+
+std::unordered_map<int, std::string> MakeKeyMap() {
+
+    bindStick("left_stick", KeyToAction);
+    bindStick("right_stick", KeyToAction);
+    bindStick("dpad", KeyToAction);
 
     for (int i = 0; i < (sizeof(allButtons) / sizeof(allButtons[0])); i++) {
         const auto& buttonName = allButtons[i];
-        NewMapping.insert_or_assign(buttonName, GetRepresentative(config["buttons"][buttonName].get<std::string>()));
+        auto vkCode = GetRepresentative(config["buttons"][buttonName].get<std::string>());
+        KeyToAction.insert_or_assign(vkCode, buttonName);
+
+
+        std::cout << "assigned " << vkCode << " to " << KeyToAction[vkCode] << std::endl;
+
     }
 
-    NewMapping.insert_or_assign("right_stick_multiplier", 
-        GetRepresentative(config["special_keys"]["right_stick_multiplier_key"].get<std::string>()));
+    KeyToAction.insert_or_assign( 
+        GetRepresentative(config["special_keys"]["right_stick_multiplier_key"].get<std::string>()), "right_stick_multiplier");
 
-    return NewMapping;
+    KeyToAction.insert_or_assign( 
+        GetRepresentative(config["special_keys"]["EXIT"].get<std::string>()), "EXIT");
+
+    return KeyToAction;
+}
+
+
+
+
+bool processKeyEvent(int vkCode, WPARAM edge){
+    std::cout << "Processing: " << vkCode << std::endl;;
+    auto it = KeyToAction.find(vkCode);
+    if (it == KeyToAction.end()) {
+        std::cout << "Not a known action: " << vkCode << std::endl;
+        return false;
+    }
+    std::string actionName = it->second;
+
+    std::cout << "Found: " << vkCode <<" assigned to " << actionName << std::endl;;
+
+    if (edge == WM_KEYDOWN || edge == WM_SYSKEYDOWN) {
+        IsKeyDown[actionName] = true;
+    } else if (edge == WM_KEYUP || edge == WM_SYSKEYUP) {
+        IsKeyDown[actionName] = false;
+    }
+
+    return true;
+}
+
+
+bool GetKeyDown(std::string Name){
+    // std::cout << "Value of : " << Name << " = " << IsKeyDown[Name] << std::endl;;
+
+    return IsKeyDown[Name];
 }
