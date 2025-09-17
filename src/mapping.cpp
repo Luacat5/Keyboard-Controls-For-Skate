@@ -109,7 +109,6 @@ std::unordered_map<int, std::string> MakeKeyMap() {
 
 
 bool processKeyEvent(int vkCode, WPARAM edge){
-    std::cout << "Processing: " << vkCode << std::endl;;
     auto it = KeyToAction.find(vkCode);
     if (it == KeyToAction.end()) {
         std::cout << "Not a known action: " << vkCode << std::endl;
@@ -130,7 +129,5 @@ bool processKeyEvent(int vkCode, WPARAM edge){
 
 
 bool GetKeyDown(std::string Name){
-    // std::cout << "Value of : " << Name << " = " << IsKeyDown[Name] << std::endl;;
-
     return IsKeyDown[Name];
 }

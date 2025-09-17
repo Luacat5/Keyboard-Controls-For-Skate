@@ -36,7 +36,7 @@
   "special_keys": {
     "EXIT": "VK_ESCAPE",
     "right_stick_multiplier_key": "VK_LSHIFT",
-    "right_stick_multiplier_value": 0.8
+    "right_stick_multiplier_value": 0.75
   },
   "input_sink": true,
   "poll_interval_ms": 1

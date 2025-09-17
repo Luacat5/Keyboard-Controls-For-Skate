@@ -8,9 +8,7 @@ std::atomic<bool> running;
 LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode == HC_ACTION) {
         KBDLLHOOKSTRUCT* p = reinterpret_cast<KBDLLHOOKSTRUCT*>(lParam);
-        // Process key -> send to your mapping system
 
-        std::cout << "I have recieved input" << p->vkCode << std::endl;
 
         bool swallow = processKeyEvent(p->vkCode, wParam); 
 

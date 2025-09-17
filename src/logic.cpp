@@ -1,4 +1,5 @@
 #include "logic.h"
+#include <cmath>
 
 static PVIGEM_CLIENT client = nullptr;
 static PVIGEM_TARGET pad = nullptr;
@@ -66,6 +67,115 @@ void ReturnToZeros(int Vect[2], float speed){
     }
 }
 
+float GetRightClampFac(){
+    if (GetKeyDown("right_stick_multiplier")) {
+        return config["special_keys"]["right_stick_multiplier_value"].get<float>();
+    }
+
+    return 1.0f;
+}
+
+float theta = 0.0;
+const float thetaSpeed = M_PI/12;
+const float snapDistance = M_PI/2;
+const int rReturnTick = 10; // in ms (while loop iteration)
+int rReturnTimer = 0;
+
+const float rReturnSpeed = 0.7;
+
+void rightStickSolveLegacy(float rAccel){
+    ReturnToZeros(RStickVelocity, rReturnSpeed);
+
+    float scaling = GetRightClampFac();
+
+    if (GetKeyDown("right_stick_up")) {
+            RStickVelocity[1] += maxThumbRadius * rAccel * scaling;
+        }
+        if (GetKeyDown("right_stick_down")) {
+            RStickVelocity[1] -= maxThumbRadius * rAccel * scaling;
+        }
+        if (GetKeyDown("right_stick_left")) {
+            RStickVelocity[0] -= maxThumbRadius * rAccel * scaling;
+        }
+        if (GetKeyDown("right_stick_right")) {
+            RStickVelocity[0] += maxThumbRadius * rAccel * scaling;
+        }
+
+        RStickVelocity[0] = AbsClamp(RStickVelocity[0], maxThumbRadius * scaling);
+        RStickVelocity[1] = AbsClamp(RStickVelocity[1], maxThumbRadius * scaling);
+}
+
+float GetTargetTheta(){
+
+    float resultTheta = 0.0;
+    double X = 0;
+    double Y = 0;
+
+    if (GetKeyDown("right_stick_up")){
+        Y += 1;
+    }
+    if (GetKeyDown("right_stick_down")){
+        Y -= 1;
+    }
+
+    if (GetKeyDown("right_stick_right")){
+        X += 1;
+    }
+    if (GetKeyDown("right_stick_left")){
+        X -= 1;
+    }
+
+    float dist = 2;
+    if (X != 0 ^ Y != 0) dist = 1;
+    //thanks xor
+
+    if (X == 0 && Y == 0){
+        return -808;
+    }
+
+    if (Y > 0){
+        resultTheta = acos(X/dist);
+    } else {
+        resultTheta = 2 * M_PI - acos(X/dist);
+    } // fits the theta properly
+
+    return resultTheta;
+}
+
+void rightStickSolveRadial(float rAccel){
+    float scaling = GetRightClampFac();
+
+     float tTheta = GetTargetTheta();
+
+    bool rMovement = GetKeyDown("right_stick_down") || GetKeyDown("right_stick_up") || GetKeyDown("right_stick_left") || GetKeyDown("right_stick_right"); 
+    bool rStickDisplaced = RStickVelocity[0] != 0 || RStickVelocity[1] != 0;
+
+    rMovement = rMovement && !(tTheta == -808);
+
+    if (rMovement) {
+        rReturnTimer = 0;
+        if (abs(tTheta - theta) >= snapDistance){
+            theta = tTheta;
+            //flick support
+            std:: cout <<  "snapped\n";
+        } else {
+            theta += (tTheta - theta) * 0.3; // where 0.3 is lerp speed.
+        }
+
+
+        RStickVelocity[0] = cos(theta) * maxThumbRadius * scaling;
+        RStickVelocity[1] = sin(theta) * maxThumbRadius * scaling;
+
+    }  else if (rStickDisplaced) {
+        rReturnTimer++;
+
+        if (rReturnTimer >= rReturnTick){
+            theta = -808; //out of bounds, instant snap.
+            ReturnToZeros(RStickVelocity, rReturnSpeed);
+        }
+    }
+}
+
 
 void mainLogicLoop()
 {
@@ -92,7 +202,6 @@ void mainLogicLoop()
         const float leftAccel = config["left_stick"]["acceleration"].get<float>();
         const float rightAccel = config["right_stick"]["acceleration"].get<float>();
 
-        ReturnToZeros(RStickVelocity, 0.7);
         ReturnToZeros(LStickVelocity, 0.7);
         // left stick
         if (GetKeyDown("left_stick_up")) {
@@ -113,29 +222,8 @@ void mainLogicLoop()
 
         report.sThumbLX = LStickVelocity[0];
         report.sThumbLY = LStickVelocity[1];
-
-        float scaling = 1.0f;
-        if (GetKeyDown("right_stick_multiplier")) {
-            scaling = config["special_keys"]["right_stick_multiplier_value"].get<float>();
-        }
-
         // right stick
-        if (GetKeyDown("right_stick_up")) {
-            RStickVelocity[1] += maxThumbRadius * rightAccel * scaling;
-        }
-        if (GetKeyDown("right_stick_down")) {
-            RStickVelocity[1] -= maxThumbRadius * rightAccel * scaling;
-        }
-        if (GetKeyDown("right_stick_left")) {
-            RStickVelocity[0] -= maxThumbRadius * rightAccel * scaling;
-        }
-        if (GetKeyDown("right_stick_right")) {
-            RStickVelocity[0] += maxThumbRadius * rightAccel * scaling;
-        }
-
-        RStickVelocity[0] = AbsClamp(RStickVelocity[0], maxThumbRadius * scaling);
-        RStickVelocity[1] = AbsClamp(RStickVelocity[1], maxThumbRadius * scaling);
-
+        rightStickSolveRadial(rightAccel);
         report.sThumbRX = RStickVelocity[0];
         report.sThumbRY = RStickVelocity[1];
 
